@@ -27,7 +27,7 @@ public class Principal {
             options = sc.nextInt();
             switch(options){
                 case 1 -> authService.register(userRepository);
-                case 2 -> authService.login();
+                case 2 -> authService.login(userRepository);
                 case 0 -> System.exit(0);
                 default -> System.out.println("Opção Inválida");
             }

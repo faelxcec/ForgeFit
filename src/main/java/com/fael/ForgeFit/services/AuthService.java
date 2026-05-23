@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import javax.sound.midi.Soundbank;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class AuthService {
@@ -47,15 +48,29 @@ public class AuthService {
 
         User user = new User(name, email, password);
 
-        try {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isPresent()) {
+            System.out.println("Email já cadastrado!");
+            return;
+        }
+        else  {
             userRepository.save(user);
-        } catch (DataIntegrityViolationException e) {
-            String erro = e.getStackTrace().toString();
-            if (erro.contains("already exists") && erro.contains("email")) {
-                System.out.println("O email já existe! Faça login");
-            }
         }
     }
-    public void login(){
+    public void login(UserRepository userRepository){
+        System.out.println("Digite seu email: ");
+        String email = scanner.nextLine();
+        Optional<User> user = userRepository.findByEmail(email);;
+        System.out.println("Digite sua senha: ");
+        String password = scanner.nextLine();
+        if (user.isPresent() && user.get().getPassword().equals(password)) {
+            System.out.println("Logado com sucesso!");
+            System.out.println("Bem vindo, "+ user.get().getName() + "!!");
+        }
+        else {
+            System.out.println("Dados incorretos!");
+            login(userRepository);
+        }
     }
 }
