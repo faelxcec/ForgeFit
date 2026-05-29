@@ -1,23 +1,38 @@
 package com.fael.ForgeFit.services;
 
+import com.fael.ForgeFit.Principal.Logged;
 import com.fael.ForgeFit.entity.User;
 import com.fael.ForgeFit.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import javax.sound.midi.Soundbank;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Scanner;
 
+@Service
 public class AuthService {
-    private Scanner scanner = new Scanner(System.in);
 
-    public void register(UserRepository userRepository) {
+    private Scanner scanner = new Scanner(System.in);
+    private PasswordService passwordService = new PasswordService();
+    private final Logged loggedUser;
+    private final UserRepository userRepository;
+
+    public AuthService(Logged loggedUser, UserRepository userRepository) {
+        this.userRepository = userRepository;
+        this.loggedUser = loggedUser;
+    }
+
+    public void register() {
         LocalDateTime createdAt;
         System.out.println("Digite seu nome: ");
         String name = scanner.nextLine();
         String pedidoEmail = "Email: ";
         String email;
+
 
         int contador = 1;
         do {
@@ -43,10 +58,11 @@ public class AuthService {
                 continue;
             }else  {
                 valido = false;
+                passwordService.encryptPassword(password);
             }
         } while (valido);
 
-        User user = new User(name, email, password);
+        User user = new User(name, email, passwordService.encryptPassword(password));
 
         Optional<User> userOptional = userRepository.findByEmail(email);
 
@@ -58,19 +74,26 @@ public class AuthService {
             userRepository.save(user);
         }
     }
-    public void login(UserRepository userRepository){
+    public void login(){
         System.out.println("Digite seu email: ");
         String email = scanner.nextLine();
         Optional<User> user = userRepository.findByEmail(email);;
         System.out.println("Digite sua senha: ");
         String password = scanner.nextLine();
-        if (user.isPresent() && user.get().getPassword().equals(password)) {
+        if (user.isEmpty()) {
+            System.out.println("Dados incorretos!");
+            return;
+        }
+        boolean valido = passwordService.checkPassword(password, user.get().getPassword());
+
+        if (user.isPresent() && valido) {
+            User currentUser = user.get();
             System.out.println("Logado com sucesso!");
             System.out.println("Bem vindo, "+ user.get().getName() + "!!");
+            loggedUser.menu(currentUser);
         }
         else {
             System.out.println("Dados incorretos!");
-            login(userRepository);
         }
     }
 }
